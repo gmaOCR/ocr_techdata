@@ -3,7 +3,10 @@ from unittest.mock import MagicMock, patch
 import requests
 
 from odoo.tests.common import TransactionCase
+from odoo.tools import mute_logger
 from odoo.addons.ocr_techdata.services import mars_client, jwt_auth
+
+_MARS_LOGGER = "odoo.addons.ocr_techdata.services.mars_client"
 
 
 class TestMarsClient(TransactionCase):
@@ -39,6 +42,7 @@ class TestMarsClient(TransactionCase):
         self.assertIsNotNone(result)
         self.assertEqual(result["status"], "success")
 
+    @mute_logger(_MARS_LOGGER)
     def test_no_token_returns_none(self):
         env = self._make_env_mock()
         with patch(
@@ -48,6 +52,7 @@ class TestMarsClient(TransactionCase):
             result = mars_client.extract(env, "b64data==", "invoice", "application/pdf")
         self.assertIsNone(result)
 
+    @mute_logger(_MARS_LOGGER)
     def test_timeout_returns_none(self):
         env = self._make_env_mock()
         with self._patch_token():
@@ -55,6 +60,7 @@ class TestMarsClient(TransactionCase):
                 result = mars_client.extract(env, "b64data==", "invoice", "application/pdf")
         self.assertIsNone(result)
 
+    @mute_logger(_MARS_LOGGER)
     def test_connection_error_returns_none(self):
         env = self._make_env_mock()
         with self._patch_token():
@@ -62,6 +68,7 @@ class TestMarsClient(TransactionCase):
                 result = mars_client.extract(env, "b64data==", "invoice", "application/pdf")
         self.assertIsNone(result)
 
+    @mute_logger(_MARS_LOGGER)
     def test_http_500_returns_none(self):
         env = self._make_env_mock()
         with self._patch_token():
@@ -74,6 +81,7 @@ class TestMarsClient(TransactionCase):
                 result = mars_client.extract(env, "b64data==", "invoice", "application/pdf")
         self.assertIsNone(result)
 
+    @mute_logger(_MARS_LOGGER)
     def test_unexpected_exception_returns_none(self):
         env = self._make_env_mock()
         with self._patch_token():
@@ -121,11 +129,13 @@ class TestCreditOnMars(TransactionCase):
         call_kwargs = mock_post.call_args
         self.assertIn("X-Admin-Key", call_kwargs[1]["headers"])
 
+    @mute_logger(_MARS_LOGGER)
     def test_credit_on_mars_missing_admin_key_returns_false(self):
         env = self._make_env(admin_key="")
         result = mars_client.credit_on_mars(env, "odoo-prod", 100)
         self.assertFalse(result)
 
+    @mute_logger(_MARS_LOGGER)
     def test_credit_on_mars_http_403_returns_false(self):
         env = self._make_env()
         with patch("requests.post") as mock_post:
@@ -137,6 +147,7 @@ class TestCreditOnMars(TransactionCase):
             result = mars_client.credit_on_mars(env, "odoo-prod", 100)
         self.assertFalse(result)
 
+    @mute_logger(_MARS_LOGGER)
     def test_credit_on_mars_exception_returns_false(self):
         env = self._make_env()
         with patch("requests.post", side_effect=ConnectionError("unreachable")):

@@ -1,7 +1,10 @@
 from unittest.mock import MagicMock, patch
 
 from odoo.tests.common import TransactionCase
+from odoo.tools import mute_logger
 from odoo.addons.ocr_techdata.services import jwt_auth
+
+_JWT_LOGGER = "odoo.addons.ocr_techdata.services.jwt_auth"
 
 
 class TestJwtAuth(TransactionCase):
@@ -68,11 +71,13 @@ class TestJwtAuth(TransactionCase):
 
         self.assertEqual(result, "new.access.token")
 
+    @mute_logger(_JWT_LOGGER)
     def test_missing_credentials_returns_none(self):
         env, _ = self._make_env_mock(client_id="", client_secret="")
         result = jwt_auth.get_access_token(env)
         self.assertIsNone(result)
 
+    @mute_logger(_JWT_LOGGER)
     def test_connection_error_returns_none(self):
         import requests as req
         env, _ = self._make_env_mock()
