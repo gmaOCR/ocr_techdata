@@ -38,10 +38,7 @@ class OcrProductMapping(models.Model):
     )
     last_validated = fields.Datetime(string="Dernière validation")
 
-    _sql_constraints = [
-        (
-            "unique_partner_desc_company",
-            "UNIQUE(partner_id, description_key, company_id)",
-            "Un seul mapping par fournisseur / description / société.",
-        )
-    ]
+    _unique_partner_desc_company = models.Constraint(
+        "UNIQUE(partner_id, description_key, company_id)",
+        "Un seul mapping par fournisseur / description / société.",
+    )

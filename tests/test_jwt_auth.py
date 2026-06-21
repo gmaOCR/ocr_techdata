@@ -76,7 +76,10 @@ class TestJwtAuth(TransactionCase):
     def test_connection_error_returns_none(self):
         import requests as req
         env, _ = self._make_env_mock()
-        with patch("requests.Session.post", side_effect=req.exceptions.ConnectionError):
+        with patch(
+            "odoo.addons.ocr_techdata.services.jwt_auth.requests.post",
+            side_effect=req.exceptions.ConnectionError,
+        ):
             result = jwt_auth.get_access_token(env)
         self.assertIsNone(result)
 
