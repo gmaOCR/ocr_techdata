@@ -63,7 +63,7 @@ def extract(
         _logger.error("ocr_techdata: request to mars timed out after %ds", _TIMEOUT)
         return None
     except requests.exceptions.ConnectionError:
-        _logger.error("ocr_techdata: cannot connect to mars (%s)", mars_url)
+        _logger.error("ocr_techdata: cannot connect to mars (%s)", MARS_BASE_URL)
         return None
     except requests.exceptions.HTTPError as exc:
         status = exc.response.status_code if exc.response else "?"

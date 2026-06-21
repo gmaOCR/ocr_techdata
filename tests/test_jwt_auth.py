@@ -9,11 +9,9 @@ class TestJwtAuth(TransactionCase):
         super().setUp()
         jwt_auth.clear_token_cache()
 
-    def _make_env_mock(self, mars_url="https://mars.test", client_id="odoo-prod",
-                       client_secret="secret", refresh_token=""):
+    def _make_env_mock(self, client_id="odoo-prod", client_secret="secret", refresh_token=""):
         icp = MagicMock()
         params = {
-            "ocr_techdata.mars_url": mars_url,
             "ocr_techdata.client_id": client_id,
             "ocr_techdata.client_secret": client_secret,
             "ocr_techdata.refresh_token": refresh_token,
@@ -69,11 +67,6 @@ class TestJwtAuth(TransactionCase):
             result = jwt_auth.get_access_token(env)
 
         self.assertEqual(result, "new.access.token")
-
-    def test_missing_url_returns_none(self):
-        env, _ = self._make_env_mock(mars_url="")
-        result = jwt_auth.get_access_token(env)
-        self.assertIsNone(result)
 
     def test_missing_credentials_returns_none(self):
         env, _ = self._make_env_mock(client_id="", client_secret="")
