@@ -2,6 +2,9 @@
 from unittest.mock import MagicMock, patch
 
 from odoo.tests.common import TransactionCase
+from odoo.tools import mute_logger
+
+_HOOKS_LOGGER = "odoo.addons.ocr_techdata.hooks"
 
 
 class TestPostInstallHook(TransactionCase):
@@ -57,6 +60,7 @@ class TestPostInstallHook(TransactionCase):
 
         mock_post.assert_not_called()
 
+    @mute_logger(_HOOKS_LOGGER)
     def test_hook_does_not_block_on_connection_error(self):
         from odoo.addons.ocr_techdata.hooks import post_init_hook
         import requests
@@ -72,6 +76,7 @@ class TestPostInstallHook(TransactionCase):
 
         icp.set_param.assert_not_called()
 
+    @mute_logger(_HOOKS_LOGGER)
     def test_hook_does_not_block_on_timeout(self):
         from odoo.addons.ocr_techdata.hooks import post_init_hook
         import requests
@@ -84,6 +89,7 @@ class TestPostInstallHook(TransactionCase):
             except Exception as exc:
                 self.fail(f"post_init_hook raised unexpectedly: {exc}")
 
+    @mute_logger(_HOOKS_LOGGER)
     def test_hook_skips_when_database_uuid_missing(self):
         from odoo.addons.ocr_techdata.hooks import post_init_hook
 

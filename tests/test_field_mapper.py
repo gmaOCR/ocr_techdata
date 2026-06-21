@@ -1,5 +1,8 @@
 from odoo.tests.common import TransactionCase
+from odoo.tools import mute_logger
 from odoo.addons.ocr_techdata.services.field_mapper import mars_to_odoo, get_confidence_for_field
+
+_MAPPER_LOGGER = "odoo.addons.ocr_techdata.services.field_mapper"
 
 SAMPLE_MARS_RESPONSE = {
     "status": "success",
@@ -64,6 +67,7 @@ class TestFieldMapper(TransactionCase):
         self.assertEqual(line["taxes"], [20.0])
         self.assertNotIn("taxes_type", line)
 
+    @mute_logger(_MAPPER_LOGGER)
     def test_error_status_returns_none(self):
         bad = {"status": "error", "error": "unreadable_document"}
         result = mars_to_odoo(bad, "invoice")
