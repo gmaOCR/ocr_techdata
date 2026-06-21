@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_ocr_techdata_purchase_wizard_user,ocr_techdata.purchase.wizard user,model_ocr_techdata_purchase_wizard,base.group_user,1,1,1,0
+access_ocr_product_mapping_user,ocr_techdata.product_mapping user,model_ocr_techdata_product_mapping,base.group_user,1,1,1,0
+access_ocr_product_mapping_manager,ocr_techdata.product_mapping manager,model_ocr_techdata_product_mapping,ocr_techdata.group_ocr_manager,1,1,1,1

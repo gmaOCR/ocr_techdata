@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_ocr_techdata" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.ocr.paddlevl</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="account.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//block[@id='account_digitalization']" position="after">
+
+                <!-- ── Fournisseur OCR ─────────────────────────────────── -->
+                <block title="OCR Provider" id="ocr_techdata_provider">
+                    <setting string="Fournisseur OCR"
+                             help="Choisir entre l'IAP Odoo natif et Techdata OCR">
+                        <field name="ocr_provider"/>
+                        <div class="content-group mt8" invisible="ocr_provider != 'paddlevl'">
+                            <div class="row mt4">
+                                <label for="ocr_client_id" class="col-lg-4 o_light_label"/>
+                                <field name="ocr_client_id" class="col-lg-8" readonly="1"/>
+                            </div>
+                            <div class="row mt8">
+                                <button name="action_test_mars_connection" type="object"
+                                        class="btn btn-secondary btn-sm"
+                                        string="Tester la connexion"/>
+                            </div>
+                        </div>
+                    </setting>
+                </block>
+
+                <!-- ── Tokens OCR ─────────────────────────────────────── -->
+                <block title="Tokens OCR" id="ocr_techdata_tokens"
+                       invisible="ocr_provider != 'paddlevl'">
+                    <setting string="Solde et recharge"
+                             help="Les tokens sont gérés sur le serveur OCR.">
+                        <div class="row mt4 d-flex gap-2">
+                            <button name="action_check_balance" type="object"
+                                    class="btn btn-secondary btn-sm"
+                                    string="Vérifier le solde"/>
+                            <button name="action_buy_tokens" type="object"
+                                    class="btn btn-primary btn-sm"
+                                    string="Acheter des tokens →"/>
+                        </div>
+                        <div class="text-muted small mt4">
+                            Paiement sécurisé via Stripe. Les tokens sont crédités instantanément après paiement.
+                        </div>
+                    </setting>
+                </block>
+
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Action : ouvre les settings res.config.settings -->
+    <record id="action_ocr_techdata_settings_window" model="ir.actions.act_window">
+        <field name="name">Techdata OCR — Configuration</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+    </record>
+
+    <!-- Menu root for OCR module -->
+    <menuitem id="menu_ocr_techdata_root"
+        name="Techdata OCR"
+        sequence="90"
+        groups="base.group_system"/>
+
+    <menuitem id="menu_ocr_techdata_settings"
+        name="Configuration"
+        parent="menu_ocr_techdata_root"
+        action="action_ocr_techdata_settings_window"
+        sequence="1"
+        groups="base.group_system"/>
+</odoo>

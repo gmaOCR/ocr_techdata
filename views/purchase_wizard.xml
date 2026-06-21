@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_ocr_purchase_wizard_form" model="ir.ui.view">
+        <field name="name">ocr_techdata.purchase.wizard.form</field>
+        <field name="model">ocr_techdata.purchase.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Acheter des tokens OCR">
+                <div class="o_form_view_container">
+                    <div class="alert alert-info" role="alert">
+                        Solde actuel : <strong><field name="balance" readonly="1"/> token(s)</strong>
+                    </div>
+                    <group>
+                        <field name="pack_id" widget="radio"/>
+                    </group>
+                </div>
+                <footer>
+                    <button name="action_checkout" type="object"
+                            string="Payer avec Stripe →"
+                            class="btn-primary"
+                            data-hotkey="s"/>
+                    <button string="Annuler" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Page de confirmation retour Stripe -->
+    <template id="purchase_success_page" name="OCR Purchase Success">
+        <t t-call="web.layout">
+            <t t-set="head_website">
+                <style>
+                    .success-box {
+                        max-width: 500px; margin: 80px auto; text-align: center;
+                        font-family: sans-serif; padding: 2rem;
+                        border: 1px solid #d4edda; border-radius: 8px; background: #f8fff9;
+                    }
+                    .success-box h2 { color: #155724; }
+                    .success-box p { color: #555; }
+                    .btn-back { margin-top: 1.5rem; display: inline-block;
+                        padding: .6rem 1.4rem; background: #2563eb; color: #fff;
+                        border-radius: 4px; text-decoration: none; font-size: 1rem; }
+                    .btn-back:hover { background: #1d4ed8; }
+                </style>
+            </t>
+            <div class="success-box">
+                <h2>✓ Paiement confirmé</h2>
+                <p>Vos tokens OCR ont été crédités sur votre compte.<br/>
+                   Vous pouvez maintenant numériser vos documents.</p>
+                <a href="/odoo/settings" class="btn-back">Retour aux paramètres</a>
+            </div>
+        </t>
+    </template>
+</odoo>

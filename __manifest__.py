@@ -1,0 +1,23 @@
+{
+    "name": "Techdata OCR",
+    "version": "19.0.1.3.0",
+    "category": "Accounting/Accounting",
+    "summary": "Fournisseur OCR avancé pour Odoo - alternative à l'IAP Odoo",
+    "author": "Techdata.solutions",
+    "license": "LGPL-3",
+    "depends": [
+        "account_invoice_extract",
+        "hr_expense_extract",
+        "web",
+    ],
+    "data": [
+        "security/ocr_techdata_groups.xml",
+        "security/ir.model.access.csv",
+        "views/purchase_wizard.xml",
+        "views/res_config_settings_views.xml",
+        "views/product_mapping_views.xml",
+    ],
+    "installable": True,
+    "auto_install": False,
+    "post_init_hook": "post_init_hook",
+}

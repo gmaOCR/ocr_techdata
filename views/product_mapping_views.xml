@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_ocr_product_mapping_list" model="ir.ui.view">
+        <field name="name">ocr.techdata.product.mapping.list</field>
+        <field name="model">ocr_techdata.product_mapping</field>
+        <field name="arch" type="xml">
+            <list string="Mappings produits OCR" editable="bottom">
+                <field name="partner_id"/>
+                <field name="description_key"/>
+                <field name="product_id"/>
+                <field name="match_count" string="Confirmations"/>
+                <field name="last_validated" string="Dernière validation"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_ocr_product_mapping" model="ir.actions.act_window">
+        <field name="name">Mappings produits OCR</field>
+        <field name="res_model">ocr_techdata.product_mapping</field>
+        <field name="view_mode">list</field>
+    </record>
+
+    <menuitem id="menu_ocr_product_mapping"
+        name="Mappings produits"
+        parent="menu_ocr_techdata_root"
+        action="action_ocr_product_mapping"
+        sequence="2"
+        groups="ocr_techdata.group_ocr_manager"/>
+</odoo>
