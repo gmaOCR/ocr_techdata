@@ -54,7 +54,7 @@ class ResConfigSettings(models.TransientModel):
     def action_check_balance(self):
         balance = mars_client.get_token_balance(self.env)
         if balance < 0:
-            return self._notify("Impossible de récupérer le solde — vérifiez la connexion mars", "warning")
+            return self._notify("Impossible de récupérer le solde — vérifiez la connexion vers l'OCR", "warning")
         return self._notify(f"Solde OCR : {balance} token(s)", "success")
 
     def action_buy_tokens(self):
