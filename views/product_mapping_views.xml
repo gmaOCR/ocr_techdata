@@ -4,18 +4,18 @@
         <field name="name">ocr.techdata.product.mapping.list</field>
         <field name="model">ocr_techdata.product_mapping</field>
         <field name="arch" type="xml">
-            <list string="Mappings produits OCR" editable="bottom">
+            <list string="OCR Product Mappings" editable="bottom">
                 <field name="partner_id"/>
                 <field name="description_key"/>
                 <field name="product_id"/>
                 <field name="match_count" string="Confirmations"/>
-                <field name="last_validated" string="Dernière validation"/>
+                <field name="last_validated" string="Last validated"/>
             </list>
         </field>
     </record>
 
     <record id="action_ocr_product_mapping" model="ir.actions.act_window">
-        <field name="name">Mappings produits OCR</field>
+        <field name="name">OCR Product Mappings list</field>
         <field name="res_model">ocr_techdata.product_mapping</field>
         <field name="view_mode">list</field>
     </record>

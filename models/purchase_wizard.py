@@ -9,11 +9,11 @@ _logger = logging.getLogger(__name__)
 
 class OcrPurchaseWizard(models.TransientModel):
     _name = "ocr_techdata.purchase.wizard"
-    _description = "Achat de tokens OCR"
+    _description = "OCR token purchase"
 
-    balance = fields.Integer("Solde actuel", readonly=True)
+    balance = fields.Integer("Current balance", readonly=True)
     pack_id = fields.Selection(selection="_get_pack_selection", string="Pack", required=True)
-    pack_info = fields.Char("Info pack", compute="_compute_pack_info")
+    pack_info = fields.Char("Pack info", compute="_compute_pack_info")
 
     @api.model
     def _get_pack_selection(self):
@@ -58,7 +58,7 @@ class OcrPurchaseWizard(models.TransientModel):
                 "type": "ir.actions.client",
                 "tag": "display_notification",
                 "params": {
-                    "message": _("Impossible de créer la session de paiement. Veuillez réessayer."),
+                    "message": _("Could not create the payment session. Please try again."),
                     "type": "danger",
                     "sticky": False,
                 },

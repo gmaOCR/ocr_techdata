@@ -12,9 +12,9 @@ class AccountMove(models.Model):
 
     # Snapshot des champs OCR utiles au wizard de rapprochement (product_ref, VAT, IBAN,
     # BIC… ne sont pas persistés par Odoo). Clé 'fields' + liste 'lines' (par ligne mars).
-    ocr_extraction_data = fields.Json(string="OCR — données d'extraction", copy=False)
+    ocr_extraction_data = fields.Json(string="OCR — extraction data", copy=False)
     ocr_has_unmatched = fields.Boolean(
-        string="OCR — entités à rapprocher", compute="_compute_ocr_has_unmatched"
+        string="OCR — unmatched entities", compute="_compute_ocr_has_unmatched"
     )
 
     def _compute_ocr_has_unmatched(self):

@@ -7,10 +7,10 @@
         <field name="arch" type="xml">
             <xpath expr="//block[@id='account_digitalization']" position="after">
 
-                <!-- ── Fournisseur OCR ─────────────────────────────────── -->
+                <!-- ── OCR Provider ───────────────────────────────────── -->
                 <block title="OCR Provider" id="ocr_techdata_provider">
-                    <setting string="Fournisseur OCR"
-                             help="Choisir entre l'IAP Odoo natif et Techdata OCR">
+                    <setting string="OCR Provider"
+                             help="Choose between native Odoo IAP and Techdata OCR">
                         <field name="ocr_provider"/>
                         <div class="content-group mt8" invisible="ocr_provider != 'paddlevl'">
                             <div class="row mt4">
@@ -30,21 +30,21 @@
                     </setting>
                 </block>
 
-                <!-- ── Tokens OCR ─────────────────────────────────────── -->
-                <block title="Tokens OCR" id="ocr_techdata_tokens"
+                <!-- ── OCR Tokens ─────────────────────────────────────── -->
+                <block title="OCR Tokens" id="ocr_techdata_tokens"
                        invisible="ocr_provider != 'paddlevl'">
-                    <setting string="Solde et recharge"
-                             help="Les tokens sont gérés sur le serveur OCR.">
+                    <setting string="Balance &amp; top-up"
+                             help="Tokens are managed on the OCR server.">
                         <div class="row mt4 d-flex gap-2">
                             <button name="action_check_balance" type="object"
                                     class="btn btn-secondary btn-sm"
-                                    string="Vérifier le solde"/>
+                                    string="Check balance"/>
                             <button name="action_buy_tokens" type="object"
                                     class="btn btn-primary btn-sm"
-                                    string="Acheter des tokens →"/>
+                                    string="Buy tokens →"/>
                         </div>
                         <div class="text-muted small mt4">
-                            Paiement sécurisé via Stripe. Les tokens sont crédités instantanément après paiement.
+                            Secure payment via Stripe. Tokens are credited instantly after payment.
                         </div>
                     </setting>
                 </block>

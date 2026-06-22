@@ -1,0 +1,235 @@
+# French translation for Techdata OCR
+# Copyright (C) 2024 Techdata.solutions
+# This file is distributed under the same license as the Techdata OCR package.
+msgid ""
+msgstr ""
+"Project-Id-Version: Techdata OCR 19.0.1.3.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-06-22 00:00+0000\n"
+"PO-Revision-Date: 2026-06-22 00:00+0000\n"
+"Last-Translator: Techdata.solutions\n"
+"Language-Team: French\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#. res.config.settings fields
+msgid "OCR Provider"
+msgstr "Fournisseur OCR"
+
+msgid "Odoo IAP (native)"
+msgstr "Odoo IAP (natif)"
+
+msgid "Techdata OCR"
+msgstr "Techdata OCR"
+
+msgid "High confidence threshold"
+msgstr "Seuil confiance élevée"
+
+msgid "Minimum confidence threshold"
+msgstr "Seuil confiance minimale"
+
+msgid "Client ID"
+msgstr "Identifiant client"
+
+msgid "Client Secret"
+msgstr "Clé secrète client"
+
+#. res.config.settings actions / notifications
+msgid "Connection OK — model loaded: %s, version: %s"
+msgstr "Connexion OK — modèle chargé : %s, version : %s"
+
+msgid "Server responded HTTP %s"
+msgstr "Le serveur a répondu HTTP %s"
+
+msgid "Connection failed: %s"
+msgstr "Connexion impossible : %s"
+
+msgid "Cannot retrieve balance — check the OCR server connection"
+msgstr "Impossible de récupérer le solde — vérifiez la connexion vers l'OCR"
+
+msgid "OCR balance: %s token(s)"
+msgstr "Solde OCR : %s jeton(s)"
+
+msgid "Buy OCR tokens"
+msgstr "Acheter des jetons OCR"
+
+#. settings view strings
+msgid "Choose between native Odoo IAP and Techdata OCR"
+msgstr "Choisir entre l'IAP Odoo natif et Techdata OCR"
+
+msgid "OCR Tokens"
+msgstr "Jetons OCR"
+
+msgid "Balance & top-up"
+msgstr "Solde et recharge"
+
+msgid "Tokens are managed on the OCR server."
+msgstr "Les jetons sont gérés sur le serveur OCR."
+
+msgid "Check balance"
+msgstr "Vérifier le solde"
+
+msgid "Buy tokens →"
+msgstr "Acheter des jetons →"
+
+msgid "Secure payment via Stripe. Tokens are credited instantly after payment."
+msgstr "Paiement sécurisé via Stripe. Les jetons sont crédités instantanément après paiement."
+
+msgid "Register"
+msgstr "Enregistrer"
+
+msgid "Test connection"
+msgstr "Tester la connexion"
+
+#. register_instance messages
+msgid "Instance already registered."
+msgstr "Instance déjà enregistrée."
+
+msgid "Cannot register: database UUID not found."
+msgstr "Impossible d'enregistrer : UUID de base de données introuvable."
+
+msgid "Cannot reach the OCR server. Try again later."
+msgstr "Impossible de joindre le serveur OCR. Réessayez plus tard."
+
+msgid "The OCR server timed out. Try again later."
+msgstr "Le serveur OCR n'a pas répondu. Réessayez plus tard."
+
+msgid "The OCR server rejected the request (HTTP %s). Try again later."
+msgstr "Le serveur OCR a rejeté la requête (HTTP %s). Réessayez plus tard."
+
+msgid "Unexpected error during registration. See server logs."
+msgstr "Erreur inattendue lors de l'enregistrement. Consultez les journaux."
+
+msgid "Instance registered. %s token(s) granted."
+msgstr "Instance enregistrée. %s jeton(s) accordé(s)."
+
+msgid "Instance already registered on the server."
+msgstr "Instance déjà enregistrée sur le serveur."
+
+#. reconcile wizard
+msgid "OCR Reconciliation"
+msgstr "Rapprochement OCR"
+
+msgid "Supplier"
+msgstr "Fournisseur"
+
+msgid "Products"
+msgstr "Produits"
+
+msgid "Apply"
+msgstr "Appliquer"
+
+msgid "Cancel"
+msgstr "Annuler"
+
+msgid "Match"
+msgstr "Rapprocher"
+
+msgid "Create"
+msgstr "Créer"
+
+msgid "Skip"
+msgstr "Ignorer"
+
+msgid "OCR Name"
+msgstr "Nom OCR"
+
+msgid "OCR VAT"
+msgstr "TVA OCR"
+
+msgid "OCR Email"
+msgstr "Email OCR"
+
+msgid "OCR Phone"
+msgstr "Téléphone OCR"
+
+msgid "OCR IBAN"
+msgstr "IBAN OCR"
+
+msgid "OCR BIC"
+msgstr "BIC OCR"
+
+msgid "Candidates"
+msgstr "Candidats"
+
+msgid "Existing supplier"
+msgstr "Fournisseur existant"
+
+msgid "OCR Supplier"
+msgstr "Fournisseur OCR"
+
+msgid "OCR Description"
+msgstr "Description OCR"
+
+msgid "OCR Ref."
+msgstr "Réf. OCR"
+
+msgid "OCR Unit Price"
+msgstr "Prix unitaire OCR"
+
+msgid "Existing product"
+msgstr "Produit existant"
+
+msgid "OCR Product"
+msgstr "Produit OCR"
+
+#. product mapping
+msgid "OCR Product Mappings"
+msgstr "Correspondances produits OCR"
+
+msgid "Description (normalized)"
+msgstr "Description (normalisée)"
+
+msgid "Normalized (lowercase) version of the OCR description for the line."
+msgstr "Version normalisée (minuscules) de la description OCR de la ligne."
+
+msgid "Company"
+msgstr "Société"
+
+msgid "Confirmations"
+msgstr "Confirmations"
+
+msgid "Number of times this mapping was confirmed by validating an invoice."
+msgstr "Nombre de fois où ce mapping a été confirmé par validation d'une facture."
+
+msgid "Last validated"
+msgstr "Dernière validation"
+
+msgid "Only one mapping per supplier / description / company."
+msgstr "Un seul mapping par fournisseur / description / société."
+
+#. purchase wizard
+msgid "Current balance"
+msgstr "Solde actuel"
+
+msgid "Pack info"
+msgstr "Info pack"
+
+msgid "Could not create the payment session. Please try again."
+msgstr "Impossible de créer la session de paiement. Veuillez réessayer."
+
+msgid "Pay with Stripe →"
+msgstr "Payer avec Stripe →"
+
+#. purchase success page
+msgid "✓ Payment confirmed"
+msgstr "✓ Paiement confirmé"
+
+msgid "Your OCR tokens have been credited to your account."
+msgstr "Vos jetons OCR ont été crédités sur votre compte."
+
+msgid "You can now scan your documents."
+msgstr "Vous pouvez maintenant numériser vos documents."
+
+msgid "Back to settings"
+msgstr "Retour aux paramètres"
+
+#. account.move fields
+msgid "OCR — extraction data"
+msgstr "OCR — données d'extraction"
+
+msgid "OCR — unmatched entities"
+msgstr "OCR — entités à rapprocher"

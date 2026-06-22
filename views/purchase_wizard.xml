@@ -4,10 +4,10 @@
         <field name="name">ocr_techdata.purchase.wizard.form</field>
         <field name="model">ocr_techdata.purchase.wizard</field>
         <field name="arch" type="xml">
-            <form string="Acheter des tokens OCR">
+            <form string="Buy OCR tokens">
                 <div class="o_form_view_container">
                     <div class="alert alert-info" role="alert">
-                        Solde actuel : <strong><field name="balance" readonly="1"/> token(s)</strong>
+                        Current balance: <strong><field name="balance" readonly="1"/> token(s)</strong>
                     </div>
                     <group>
                         <field name="pack_id" widget="radio"/>
@@ -15,16 +15,16 @@
                 </div>
                 <footer>
                     <button name="action_checkout" type="object"
-                            string="Payer avec Stripe →"
+                            string="Pay with Stripe →"
                             class="btn-primary"
                             data-hotkey="s"/>
-                    <button string="Annuler" class="btn-secondary" special="cancel"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
                 </footer>
             </form>
         </field>
     </record>
 
-    <!-- Page de confirmation retour Stripe -->
+    <!-- Stripe return confirmation page -->
     <template id="purchase_success_page" name="OCR Purchase Success">
         <t t-call="web.layout">
             <t t-set="head_website">
@@ -43,10 +43,10 @@
                 </style>
             </t>
             <div class="success-box">
-                <h2>✓ Paiement confirmé</h2>
-                <p>Vos tokens OCR ont été crédités sur votre compte.<br/>
-                   Vous pouvez maintenant numériser vos documents.</p>
-                <a href="/odoo/settings" class="btn-back">Retour aux paramètres</a>
+                <h2>✓ Payment confirmed</h2>
+                <p>Your OCR tokens have been credited to your account.<br/>
+                   You can now scan your documents.</p>
+                <a href="/odoo/settings" class="btn-back">Back to settings</a>
             </div>
         </t>
     </template>

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Techdata OCR</title>
+    <style>
+        body { font-family: sans-serif; max-width: 900px; margin: 0 auto; color: #333; }
+        h1 { color: #1a4e8a; }
+        h2 { color: #2563eb; border-bottom: 2px solid #e5e7eb; padding-bottom: 4px; }
+        .badges { margin: 1em 0; }
+        .badge { display: inline-block; padding: 4px 12px; border-radius: 4px;
+                 font-size: 0.85em; font-weight: bold; margin-right: 8px; }
+        .badge-blue { background: #dbeafe; color: #1d4ed8; }
+        .badge-green { background: #dcfce7; color: #166534; }
+        .features { display: grid; grid-template-columns: 1fr 1fr; gap: 1em; }
+        .feature-card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 1em; }
+        .feature-card h3 { margin-top: 0; color: #1a4e8a; }
+        pre { background: #f1f5f9; padding: 1em; border-radius: 6px;
+              overflow-x: auto; font-size: 0.9em; }
+        .highlight { background: #fffbeb; border-left: 4px solid #f59e0b; padding: 0.8em 1em; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 8px 12px; border: 1px solid #e5e7eb; text-align: left; }
+        th { background: #f8fafc; font-weight: 600; }
+    </style>
+</head>
+<body>
+
+<h1>Techdata OCR</h1>
+<p><strong>AI-powered OCR for Odoo 19 — PaddleOCR-VL alternative to Odoo IAP</strong></p>
+
+<div class="badges">
+    <span class="badge badge-blue">Odoo 19</span>
+    <span class="badge badge-blue">OPL-1</span>
+    <span class="badge badge-green">Accounting</span>
+    <span class="badge badge-green">AI / OCR</span>
+</div>
+
+<h2>Overview</h2>
+<p>
+Techdata OCR integrates <strong>PaddleOCR-VL</strong> (a multilingual vision-language model)
+as an alternative OCR provider in Odoo 19. It processes vendor invoices, expense reports,
+and purchase orders — extracting vendor details, amounts, dates, tax lines, and line items
+with high accuracy.
+</p>
+<p>
+It sits alongside Odoo's native IAP digitisation: the user picks the active provider in
+<em>Settings → Accounting → OCR Provider</em>. No configuration beyond the initial
+registration is required.
+</p>
+
+<h2>Key features</h2>
+<div class="features">
+    <div class="feature-card">
+        <h3>📄 Full document coverage</h3>
+        <p>Vendor invoices, expense receipts, and purchase orders. Extracts vendor name, VAT,
+        IBAN, invoice number, date, due date, totals, tax lines, and individual line items.</p>
+    </div>
+    <div class="feature-card">
+        <h3>🔁 OCR Reconciliation wizard</h3>
+        <p>When a vendor or product cannot be matched automatically, a wizard lets the user
+        match, create, or skip — and the module learns for next time.</p>
+    </div>
+    <div class="feature-card">
+        <h3>🧠 Product memory</h3>
+        <p>Confirmed product-line matches are stored per-vendor and reused automatically on
+        future scans (configurable in Accounting → Configuration → OCR Product Mappings).</p>
+    </div>
+    <div class="feature-card">
+        <h3>🔐 Secure JWT authentication</h3>
+        <p>Access tokens (15 min) and refresh tokens (7 days) rotate automatically.
+        Credentials are stored in Odoo's <code>ir.config_parameter</code>, never in source code.</p>
+    </div>
+    <div class="feature-card">
+        <h3>💳 Token-based pricing</h3>
+        <p>Purchase scan packs directly from the settings page via Stripe Checkout.
+        Token balance is displayed in real-time and topped up instantly after payment.</p>
+    </div>
+    <div class="feature-card">
+        <h3>🌍 Multilingual</h3>
+        <p>PaddleOCR-VL handles French and English documents natively. UI ships in English
+        with a full French translation catalogue included.</p>
+    </div>
+</div>
+
+<h2>How it works</h2>
+<ol>
+    <li>Install the module — your Odoo instance registers automatically with the OCR server
+        and receives a <code>client_id</code> plus free starter tokens.</li>
+    <li>Go to <strong>Settings → Accounting</strong> and set <em>OCR Provider</em> to
+        <strong>Techdata OCR</strong>.</li>
+    <li>Open any vendor invoice and click <strong>Send for digitisation</strong> (or let
+        Odoo trigger it automatically on email reception).</li>
+    <li>Fields are filled in seconds. A yellow <strong>OCR Reconciliation</strong> button
+        appears if any vendor or product needs manual confirmation.</li>
+</ol>
+
+<h2>Configuration</h2>
+<table>
+    <tr><th>Setting</th><th>Where</th></tr>
+    <tr><td>OCR Provider (Odoo IAP / Techdata OCR)</td><td>Settings → Accounting → OCR Provider</td></tr>
+    <tr><td>Client ID (read-only after registration)</td><td>Settings → Accounting → OCR Provider</td></tr>
+    <tr><td>Token balance &amp; top-up</td><td>Settings → Accounting → OCR Tokens</td></tr>
+    <tr><td>Product mapping rules</td><td>Accounting → Configuration → OCR Product Mappings</td></tr>
+    <tr><td>Confidence thresholds</td><td>Settings → Accounting (advanced)</td></tr>
+</table>
+
+<h2>Pricing</h2>
+<div class="highlight">
+    <p>The module itself is <strong>free</strong>. Scans are consumed from a prepaid token
+    balance purchased directly inside Odoo:</p>
+    <ul>
+        <li><strong>Starter</strong> — 100 scans / 10 EUR</li>
+        <li><strong>Business</strong> — 500 scans / 45 EUR</li>
+        <li><strong>Pro</strong> — 2 000 scans / 160 EUR</li>
+    </ul>
+    <p>New installations receive <strong>free starter tokens</strong> automatically.</p>
+</div>
+
+<h2>Technical requirements</h2>
+<ul>
+    <li>Odoo 19.0 (Enterprise or Community with <code>account_invoice_extract</code>)</li>
+    <li>Internet access to <code>ocr.techdata.solutions</code> (HTTPS, port 443)</li>
+    <li>Python <code>requests</code> library (bundled with Odoo)</li>
+</ul>
+
+<h2>Support</h2>
+<p>
+For questions or issues, contact <a href="mailto:support@techdata.solutions">support@techdata.solutions</a>
+or visit <a href="https://techdata.solutions">techdata.solutions</a>.
+</p>
+
+</body>
+</html>

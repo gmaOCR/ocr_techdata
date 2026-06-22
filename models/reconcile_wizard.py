@@ -1,11 +1,11 @@
-"""Wizard de rapprochement OCR — pour chaque entité (fournisseur, produits) non
-résolue automatiquement après extraction, l'utilisateur choisit : rapprocher un
-enregistrement existant, en créer un nouveau (pré-rempli depuis l'OCR), ou ignorer.
+"""OCR reconciliation wizard — for each unresolved entity (supplier, products)
+after extraction, the user chooses: match an existing record, create a new one
+(pre-filled from OCR data), or skip.
 
-Chaque création produit crée aussi le `product.supplierinfo` correspondant, ce qui
-alimente les niveaux 1-2 du product_matcher pour les prochains scans. Les lignes
-résolues nourrissent l'apprentissage `ocr_techdata.product_mapping` avec la
-description OCR d'origine (et non `line.name` muté par Odoo)."""
+Each product creation also creates the matching `product.supplierinfo`, feeding
+levels 1-2 of the product_matcher for future scans. Resolved lines feed the
+`ocr_techdata.product_mapping` learning with the original OCR description
+(not the line name mutated by Odoo)."""
 import logging
 
 from odoo import Command, _, api, fields, models
@@ -15,22 +15,22 @@ from ..services import product_matcher
 _logger = logging.getLogger(__name__)
 
 _ACTIONS = [
-    ("match", "Rapprocher"),
-    ("create", "Créer"),
-    ("skip", "Ignorer"),
+    ("match", "Match"),
+    ("create", "Create"),
+    ("skip", "Skip"),
 ]
 
 
 class OcrReconcileWizard(models.TransientModel):
     _name = "ocr_techdata.reconcile.wizard"
-    _description = "OCR — Rapprochement fournisseur & produits"
+    _description = "OCR — Supplier & product reconciliation"
 
     move_id = fields.Many2one("account.move", required=True, ondelete="cascade")
     partner_line_ids = fields.One2many(
-        "ocr_techdata.reconcile.partner.line", "wizard_id", string="Fournisseur"
+        "ocr_techdata.reconcile.partner.line", "wizard_id", string="Supplier"
     )
     product_line_ids = fields.One2many(
-        "ocr_techdata.reconcile.product.line", "wizard_id", string="Produits"
+        "ocr_techdata.reconcile.product.line", "wizard_id", string="Products"
     )
     has_partner_line = fields.Boolean(compute="_compute_flags")
     has_product_lines = fields.Boolean(compute="_compute_flags")
@@ -71,24 +71,24 @@ class OcrReconcileWizard(models.TransientModel):
 
 class OcrReconcilePartnerLine(models.TransientModel):
     _name = "ocr_techdata.reconcile.partner.line"
-    _description = "OCR — Ligne de rapprochement fournisseur"
+    _description = "OCR — Supplier reconciliation line"
 
     wizard_id = fields.Many2one("ocr_techdata.reconcile.wizard", required=True, ondelete="cascade")
-    ocr_vendor_name = fields.Char("Nom OCR", readonly=True)
-    ocr_vendor_vat = fields.Char("TVA OCR", readonly=True)
-    ocr_email = fields.Char("Email OCR", readonly=True)
-    ocr_phone = fields.Char("Téléphone OCR", readonly=True)
-    ocr_iban = fields.Char("IBAN OCR", readonly=True)
-    ocr_bic = fields.Char("BIC OCR", readonly=True)
-    candidate_partner_ids = fields.Many2many("res.partner", string="Candidats")
+    ocr_vendor_name = fields.Char("OCR Name", readonly=True)
+    ocr_vendor_vat = fields.Char("OCR VAT", readonly=True)
+    ocr_email = fields.Char("OCR Email", readonly=True)
+    ocr_phone = fields.Char("OCR Phone", readonly=True)
+    ocr_iban = fields.Char("OCR IBAN", readonly=True)
+    ocr_bic = fields.Char("OCR BIC", readonly=True)
+    candidate_partner_ids = fields.Many2many("res.partner", string="Candidates")
     action = fields.Selection(_ACTIONS, required=True, default="create")
-    partner_id = fields.Many2one("res.partner", string="Fournisseur existant")
+    partner_id = fields.Many2one("res.partner", string="Existing supplier")
 
     def _create_partner(self):
         """Create a supplier prefilled from OCR data (+ bank account from IBAN/BIC)."""
         self.ensure_one()
         vals = {
-            "name": self.ocr_vendor_name or _("Fournisseur OCR"),
+            "name": self.ocr_vendor_name or _("OCR Supplier"),
             "is_company": True,
             "supplier_rank": 1,
         }
@@ -110,23 +110,23 @@ class OcrReconcilePartnerLine(models.TransientModel):
 
 class OcrReconcileProductLine(models.TransientModel):
     _name = "ocr_techdata.reconcile.product.line"
-    _description = "OCR — Ligne de rapprochement produit"
+    _description = "OCR — Product reconciliation line"
 
     wizard_id = fields.Many2one("ocr_techdata.reconcile.wizard", required=True, ondelete="cascade")
     move_line_id = fields.Many2one("account.move.line", required=True, ondelete="cascade")
-    ocr_description = fields.Char("Description OCR", readonly=True)
-    ocr_product_ref = fields.Char("Réf. OCR", readonly=True)
-    ocr_unit_price = fields.Float("Prix unitaire OCR", readonly=True)
-    candidate_product_ids = fields.Many2many("product.product", string="Candidats")
+    ocr_description = fields.Char("OCR Description", readonly=True)
+    ocr_product_ref = fields.Char("OCR Ref.", readonly=True)
+    ocr_unit_price = fields.Float("OCR Unit Price", readonly=True)
+    candidate_product_ids = fields.Many2many("product.product", string="Candidates")
     action = fields.Selection(_ACTIONS, required=True, default="skip")
-    product_id = fields.Many2one("product.product", string="Produit existant")
+    product_id = fields.Many2one("product.product", string="Existing product")
 
     def _create_product(self, partner):
         """Create a product prefilled from OCR data + a supplierinfo for `partner`,
         so future scans match it at level 1/2 of the matcher."""
         self.ensure_one()
         product = self.env["product.product"].create({
-            "name": self.ocr_description or _("Produit OCR"),
+            "name": self.ocr_description or _("OCR Product"),
             "default_code": self.ocr_product_ref or False,
             "type": "consu",
             "purchase_ok": True,

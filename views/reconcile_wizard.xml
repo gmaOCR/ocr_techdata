@@ -4,11 +4,11 @@
         <field name="name">ocr_techdata.reconcile.wizard.form</field>
         <field name="model">ocr_techdata.reconcile.wizard</field>
         <field name="arch" type="xml">
-            <form string="Rapprochement OCR">
+            <form string="OCR Reconciliation">
                 <field name="has_partner_line" invisible="1"/>
                 <field name="has_product_lines" invisible="1"/>
                 <sheet>
-                    <group string="Fournisseur" invisible="not has_partner_line">
+                    <group string="Supplier" invisible="not has_partner_line">
                         <field name="partner_line_ids" nolabel="1">
                             <list editable="bottom" create="false" delete="false">
                                 <field name="ocr_vendor_name" readonly="1"/>
@@ -24,7 +24,7 @@
                             </list>
                         </field>
                     </group>
-                    <group string="Produits" invisible="not has_product_lines">
+                    <group string="Products" invisible="not has_product_lines">
                         <field name="product_line_ids" nolabel="1">
                             <list editable="bottom" create="false" delete="false">
                                 <field name="move_line_id" column_invisible="1"/>
@@ -42,14 +42,14 @@
                     </group>
                 </sheet>
                 <footer>
-                    <button string="Appliquer" type="object" name="action_apply" class="btn-primary"/>
-                    <button string="Annuler" class="btn-secondary" special="cancel"/>
+                    <button string="Apply" type="object" name="action_apply" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
                 </footer>
             </form>
         </field>
     </record>
 
-    <!-- Bouton sur la facture : visible quand des entités OCR restent à rapprocher -->
+    <!-- Button on the invoice: visible when OCR entities remain to be reconciled -->
     <record id="account_move_form_ocr_reconcile" model="ir.ui.view">
         <field name="name">account.move.form.ocr.reconcile</field>
         <field name="model">account.move</field>
@@ -58,7 +58,7 @@
             <xpath expr="//header" position="inside">
                 <field name="ocr_has_unmatched" invisible="1"/>
                 <button name="action_open_ocr_reconcile" type="object"
-                        string="Rapprochement OCR" class="btn-warning"
+                        string="OCR Reconciliation" class="btn-warning"
                         invisible="not ocr_has_unmatched"/>
             </xpath>
         </field>

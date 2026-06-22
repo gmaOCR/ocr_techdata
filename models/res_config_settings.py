@@ -12,8 +12,8 @@ class ResConfigSettings(models.TransientModel):
     _inherit = "res.config.settings"
 
     ocr_provider = fields.Selection(
-        [("odoo_iap", "Odoo IAP (natif)"), ("paddlevl", "Techdata OCR")],
-        string="Fournisseur OCR",
+        [("odoo_iap", "Odoo IAP (native)"), ("paddlevl", "Techdata OCR")],
+        string="OCR Provider",
         default="odoo_iap",
         config_parameter="ocr_techdata.provider",
     )
@@ -29,12 +29,12 @@ class ResConfigSettings(models.TransientModel):
         readonly=True,
     )
     ocr_confidence_high = fields.Float(
-        string="Seuil confiance élevée",
+        string="High confidence threshold",
         default=0.90,
         config_parameter="ocr_techdata.confidence_high",
     )
     ocr_confidence_low = fields.Float(
-        string="Seuil confiance minimale",
+        string="Minimum confidence threshold",
         default=0.70,
         config_parameter="ocr_techdata.confidence_low",
     )
@@ -59,23 +59,23 @@ class ResConfigSettings(models.TransientModel):
             resp = requests.get(f"{MARS_BASE_URL}/health", timeout=5)
             if resp.status_code == 200:
                 data = resp.json()
-                msg = f"Connexion OK — modèle chargé : {data.get('model_loaded')}, version : {data.get('version')}"
+                msg = f"Connection OK — model loaded: {data.get('model_loaded')}, version: {data.get('version')}"
                 return self._notify(msg, "success")
-            return self._notify(f"mars a répondu HTTP {resp.status_code}", "warning")
+            return self._notify(f"Server responded HTTP {resp.status_code}", "warning")
         except Exception as exc:
-            return self._notify(f"Connexion impossible : {exc}", "warning")
+            return self._notify(f"Connection failed: {exc}", "warning")
 
     def action_check_balance(self):
         balance = mars_client.get_token_balance(self.env)
         if balance < 0:
-            return self._notify("Impossible de récupérer le solde — vérifiez la connexion vers l'OCR", "warning")
-        return self._notify(f"Solde OCR : {balance} token(s)", "success")
+            return self._notify("Cannot retrieve balance — check the OCR server connection", "warning")
+        return self._notify(f"OCR balance: {balance} token(s)", "success")
 
     def action_buy_tokens(self):
         """Open the token purchase wizard."""
         return {
             "type": "ir.actions.act_window",
-            "name": _("Acheter des tokens OCR"),
+            "name": _("Buy OCR tokens"),
             "res_model": "ocr_techdata.purchase.wizard",
             "view_mode": "form",
             "target": "new",
