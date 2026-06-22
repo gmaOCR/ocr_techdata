@@ -4,7 +4,7 @@
     "category": "Accounting/Accounting",
     "summary": "Fournisseur OCR avancé pour Odoo - alternative à l'IAP Odoo",
     "author": "Techdata.solutions",
-    "license": "LGPL-3",
+    "license": "OPL-1",
     "depends": [
         "account_invoice_extract",
         "hr_expense_extract",
