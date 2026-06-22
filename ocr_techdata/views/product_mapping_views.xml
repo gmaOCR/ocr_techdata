@@ -27,5 +27,5 @@
         parent="account.menu_finance_configuration"
         action="action_ocr_product_mapping"
         sequence="90"
-        groups="ocr_techdata.group_ocr_manager"/>
+        groups="account.group_account_manager"/>
 </odoo>
