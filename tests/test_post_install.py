@@ -19,17 +19,26 @@ class TestPostInstallHook(TransactionCase):
         patcher.start()
         self.addCleanup(patcher.stop)
 
-    def _make_env(self, database_uuid="test-db-uuid-1234", client_id_existing=""):
+    def _make_env(self, database_uuid="test-db-uuid-1234", client_id_existing="", provider=""):
         icp = MagicMock()
         params = {
             "database.uuid": database_uuid,
             "ocr_techdata.client_id": client_id_existing,
+            "ocr_techdata.provider": provider,
         }
         icp.get_param.side_effect = lambda key, default="": params.get(key, default)
         icp.set_param = MagicMock()
         env = MagicMock()
         env.__getitem__.return_value = MagicMock(sudo=lambda: icp)
         return env, icp
+
+    def _set_param_keys(self, icp):
+        return [c[0][0] for c in icp.set_param.call_args_list]
+
+    def _assert_no_credentials(self, icp):
+        keys = self._set_param_keys(icp)
+        self.assertNotIn("ocr_techdata.client_id", keys)
+        self.assertNotIn("ocr_techdata.client_secret", keys)
 
     def test_hook_calls_register_and_stores_credentials(self):
         from odoo.addons.ocr_techdata.hooks import post_init_hook
@@ -59,6 +68,31 @@ class TestPostInstallHook(TransactionCase):
         self.assertEqual(set_calls["ocr_techdata.client_id"], "test-db-uuid-1234")
         self.assertEqual(set_calls["ocr_techdata.client_secret"], "generated-secret-xyz")
 
+    def test_hook_sets_techdata_as_default_provider(self):
+        """Installing the module makes Techdata OCR the default provider."""
+        from odoo.addons.ocr_techdata.hooks import post_init_hook
+
+        env, icp = self._make_env()
+        mock_response = MagicMock(json=lambda: {"client_id": "x", "client_secret": "y", "is_new": True})
+        mock_response.raise_for_status = MagicMock()
+
+        with patch("requests.post", return_value=mock_response):
+            post_init_hook(env)
+
+        set_calls = {c[0][0]: c[0][1] for c in icp.set_param.call_args_list}
+        self.assertEqual(set_calls.get("ocr_techdata.provider"), "paddlevl")
+
+    def test_hook_keeps_existing_provider_choice(self):
+        """A persisted provider choice (reinstall) must not be overwritten."""
+        from odoo.addons.ocr_techdata.hooks import post_init_hook
+
+        env, icp = self._make_env(client_id_existing="set", provider="odoo_iap")
+
+        with patch("requests.post"):
+            post_init_hook(env)
+
+        self.assertNotIn("ocr_techdata.provider", self._set_param_keys(icp))
+
     def test_hook_skips_if_client_id_already_set(self):
         from odoo.addons.ocr_techdata.hooks import post_init_hook
 
@@ -83,7 +117,7 @@ class TestPostInstallHook(TransactionCase):
             except Exception as exc:
                 self.fail(f"post_init_hook raised unexpectedly: {exc}")
 
-        icp.set_param.assert_not_called()
+        self._assert_no_credentials(icp)
 
     @mute_logger(_HOOKS_LOGGER)
     def test_hook_does_not_block_on_timeout(self):
@@ -117,11 +151,12 @@ class TestPostInstallHook(TransactionCase):
             except Exception as exc:
                 self.fail(f"post_init_hook raised unexpectedly: {exc}")
 
-        icp.set_param.assert_not_called()
+        self._assert_no_credentials(icp)
 
-    def test_hook_skips_during_test_builds(self):
-        """odoo.sh dev/CI builds run with test_enable → no registration attempt at all,
-        so the rate-limited /auth/register endpoint never pollutes the build log."""
+    def test_hook_skips_registration_during_test_builds(self):
+        """odoo.sh dev/CI builds run with test_enable → no /auth/register call at all,
+        so the rate-limited endpoint never pollutes the build log. The provider default
+        is still applied (local param, no network)."""
         from odoo.addons.ocr_techdata.hooks import post_init_hook
 
         env, icp = self._make_env()
@@ -131,7 +166,8 @@ class TestPostInstallHook(TransactionCase):
             post_init_hook(env)
 
         mock_post.assert_not_called()
-        icp.set_param.assert_not_called()
+        self._assert_no_credentials(icp)
+        self.assertIn("ocr_techdata.provider", self._set_param_keys(icp))
 
     @mute_logger(_HOOKS_LOGGER)
     def test_hook_skips_when_database_uuid_missing(self):
@@ -143,3 +179,26 @@ class TestPostInstallHook(TransactionCase):
             post_init_hook(env)
 
         mock_post.assert_not_called()
+
+
+class TestRegisterInstanceAction(TransactionCase):
+    """Tests for the manual 'Register' button in settings (action_register_instance)."""
+
+    def _settings(self):
+        return self.env["res.config.settings"].create({})
+
+    def test_action_returns_success_notification(self):
+        settings = self._settings()
+        with patch("odoo.addons.ocr_techdata.hooks.register_instance",
+                   return_value=(True, "Instance registered. 10 token(s) granted.")):
+            result = settings.action_register_instance()
+        self.assertEqual(result["tag"], "display_notification")
+        self.assertEqual(result["params"]["type"], "success")
+        self.assertIn("registered", result["params"]["message"])
+
+    def test_action_returns_warning_on_failure(self):
+        settings = self._settings()
+        with patch("odoo.addons.ocr_techdata.hooks.register_instance",
+                   return_value=(False, "Cannot reach the OCR server. Try again later.")):
+            result = settings.action_register_instance()
+        self.assertEqual(result["params"]["type"], "warning")

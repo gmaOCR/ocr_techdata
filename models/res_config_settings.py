@@ -39,6 +39,16 @@ class ResConfigSettings(models.TransientModel):
         config_parameter="ocr_techdata.confidence_low",
     )
 
+    def action_register_instance(self):
+        """Manually register this instance with the OCR server and fetch credentials.
+
+        Fallback for instances where automatic registration did not run (odoo.sh
+        dev/CI builds) or failed (server unreachable / rate-limited at install time).
+        """
+        from ..hooks import register_instance
+        ok, message = register_instance(self.env)
+        return self._notify(message, "success" if ok else "warning")
+
     def action_test_mars_connection(self):
         import requests
         try:

@@ -11,26 +11,24 @@ _logger = logging.getLogger(__name__)
 _REGISTER_TIMEOUT = 10
 
 
-def post_init_hook(env):
-    # Les builds de test odoo.sh recréent une DB vierge à chaque push et lancent
-    # l'install avec --test-enable. On ne tente PAS l'enregistrement dans ce cas :
-    # le serveur finirait par rate-limiter (429) et polluer les logs de build.
-    # L'install réelle en production (sans test_enable) enregistre normalement.
-    if config.get("test_enable"):
-        _logger.info("ocr_techdata: post_init_hook — test build detected, skipping auto-registration")
-        return
+def register_instance(env):
+    """Register this Odoo instance with the OCR server and store the returned
+    credentials in ir.config_parameter.
 
+    Shared by post_init_hook (automatic, on real installs) and the manual
+    "Register" button in settings (action_register_instance). Never raises —
+    returns (ok: bool, message: str) so callers can react without try/except.
+    """
     icp = env["ir.config_parameter"].sudo()
 
-    # Idempotence : si les credentials existent déjà, ne rien faire
+    # Idempotence: credentials already present → nothing to do.
     if icp.get_param("ocr_techdata.client_id", ""):
-        _logger.info("ocr_techdata: post_init_hook — credentials already present, skipping registration")
-        return
+        return True, "Instance already registered."
 
     database_uuid = icp.get_param("database.uuid", "")
     if not database_uuid:
-        _logger.warning("ocr_techdata: post_init_hook — database.uuid not found, skipping auto-registration")
-        return
+        _logger.warning("ocr_techdata: registration skipped — database.uuid not found")
+        return False, "Cannot register: database UUID not found."
 
     try:
         resp = requests.post(
@@ -41,26 +39,18 @@ def post_init_hook(env):
         resp.raise_for_status()
         data = resp.json()
     except requests.exceptions.ConnectionError:
-        _logger.warning(
-            "ocr_techdata: post_init_hook — cannot reach %s, registration skipped. "
-            "Run action_register_instance from settings when the server is available.",
-            MARS_BASE_URL,
-        )
-        return
+        _logger.warning("ocr_techdata: registration skipped — cannot reach %s", MARS_BASE_URL)
+        return False, "Cannot reach the OCR server. Try again later."
     except requests.exceptions.Timeout:
-        _logger.warning("ocr_techdata: post_init_hook — registration request timed out, skipping")
-        return
+        _logger.warning("ocr_techdata: registration skipped — request timed out")
+        return False, "The OCR server timed out. Try again later."
     except requests.exceptions.HTTPError as exc:
         status = exc.response.status_code if exc.response is not None else "?"
-        _logger.warning(
-            "ocr_techdata: post_init_hook — registration rejected by server (HTTP %s), skipping. "
-            "Run action_register_instance from settings when the server is available.",
-            status,
-        )
-        return
+        _logger.warning("ocr_techdata: registration rejected by server (HTTP %s)", status)
+        return False, f"The OCR server rejected the request (HTTP {status}). Try again later."
     except Exception:
-        _logger.exception("ocr_techdata: post_init_hook — unexpected error during registration")
-        return
+        _logger.exception("ocr_techdata: unexpected error during registration")
+        return False, "Unexpected error during registration. See server logs."
 
     client_id = data.get("client_id", "")
     client_secret = data.get("client_secret", "")
@@ -69,7 +59,6 @@ def post_init_hook(env):
 
     if client_id:
         icp.set_param("ocr_techdata.client_id", client_id)
-
     if client_secret:
         icp.set_param("ocr_techdata.client_secret", client_secret)
 
@@ -79,5 +68,28 @@ def post_init_hook(env):
             client_id,
             credits_granted,
         )
-    else:
-        _logger.info("ocr_techdata: instance already registered on mars (client_id=%s)", client_id)
+        return True, f"Instance registered. {credits_granted} token(s) granted."
+
+    _logger.info("ocr_techdata: instance already registered on server (client_id=%s)", client_id)
+    return True, "Instance already registered on the server."
+
+
+def post_init_hook(env):
+    icp = env["ir.config_parameter"].sudo()
+
+    # Installing this module means the user wants to use Techdata OCR → make it
+    # the default provider, unless a choice was already persisted (reinstall).
+    if not icp.get_param("ocr_techdata.provider", ""):
+        icp.set_param("ocr_techdata.provider", "paddlevl")
+
+    # odoo.sh dev/CI builds recreate a fresh DB on every push and install with
+    # --test-enable. We do NOT auto-register there: the server would rate-limit
+    # (429) and pollute the build log. Admins can register on demand from
+    # Settings (action_register_instance). Real production installs (no
+    # test_enable) register automatically below.
+    if config.get("test_enable"):
+        _logger.info("ocr_techdata: post_init_hook — test build detected, skipping auto-registration")
+        return
+
+    ok, message = register_instance(env)
+    _logger.info("ocr_techdata: post_init_hook — %s", message)

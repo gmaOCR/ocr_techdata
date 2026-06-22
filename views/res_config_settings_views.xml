@@ -17,10 +17,14 @@
                                 <label for="ocr_client_id" class="col-lg-4 o_light_label"/>
                                 <field name="ocr_client_id" class="col-lg-8" readonly="1"/>
                             </div>
-                            <div class="row mt8">
+                            <div class="row mt8 d-flex gap-2">
+                                <button name="action_register_instance" type="object"
+                                        class="btn btn-primary btn-sm"
+                                        string="Register"
+                                        invisible="ocr_client_id"/>
                                 <button name="action_test_mars_connection" type="object"
                                         class="btn btn-secondary btn-sm"
-                                        string="Tester la connexion"/>
+                                        string="Test connection"/>
                             </div>
                         </div>
                     </setting>
