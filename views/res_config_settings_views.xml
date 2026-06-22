@@ -52,24 +52,4 @@
             </xpath>
         </field>
     </record>
-
-    <!-- Action : ouvre les settings res.config.settings -->
-    <record id="action_ocr_techdata_settings_window" model="ir.actions.act_window">
-        <field name="name">Techdata OCR — Configuration</field>
-        <field name="res_model">res.config.settings</field>
-        <field name="view_mode">form</field>
-    </record>
-
-    <!-- Menu root for OCR module -->
-    <menuitem id="menu_ocr_techdata_root"
-        name="Techdata OCR"
-        sequence="90"
-        groups="base.group_system"/>
-
-    <menuitem id="menu_ocr_techdata_settings"
-        name="Configuration"
-        parent="menu_ocr_techdata_root"
-        action="action_ocr_techdata_settings_window"
-        sequence="1"
-        groups="base.group_system"/>
 </odoo>

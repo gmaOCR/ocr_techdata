@@ -47,7 +47,11 @@ class ResConfigSettings(models.TransientModel):
         """
         from ..hooks import register_instance
         ok, message = register_instance(self.env)
-        return self._notify(message, "success" if ok else "warning")
+        notification = self._notify(message, "success" if ok else "warning")
+        # On success, reload the settings so the freshly stored Client ID shows up.
+        if ok:
+            notification["params"]["next"] = {"type": "ir.actions.client", "tag": "reload"}
+        return notification
 
     def action_test_mars_connection(self):
         import requests

@@ -20,10 +20,12 @@
         <field name="view_mode">list</field>
     </record>
 
+    <!-- Reparented under the Accounting → Configuration menu: the module no longer
+         creates a standalone home-screen app. -->
     <menuitem id="menu_ocr_product_mapping"
-        name="Mappings produits"
-        parent="menu_ocr_techdata_root"
+        name="OCR Product Mappings"
+        parent="account.menu_finance_configuration"
         action="action_ocr_product_mapping"
-        sequence="2"
+        sequence="90"
         groups="ocr_techdata.group_ocr_manager"/>
 </odoo>
