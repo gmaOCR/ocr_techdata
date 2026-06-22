@@ -1,3 +1,0 @@
-[submodule "ocr_techdata"]
-	path = ocr_techdata
-	url = git@github.com:gmaOCR/ocr_techdata.git
