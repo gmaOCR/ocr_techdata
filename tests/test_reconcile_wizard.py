@@ -1,5 +1,6 @@
 from odoo.addons.account.tests.common import AccountTestInvoicingCommon
 from odoo.tests import tagged
+from odoo.tools import mute_logger
 
 
 @tagged("post_install", "-at_install")
@@ -128,6 +129,7 @@ class TestReconcileWizard(AccountTestInvoicingCommon):
         self.assertEqual(wizard.product_line_ids.ocr_product_ref, "REF-A")
         self.assertEqual(wizard.product_line_ids.ocr_unit_price, 10.0)
 
+    @mute_logger("odoo.addons.ocr_techdata.models.account_move")
     def test_count_mismatch_skips_product_lines(self):
         """Regression #5: when Odoo merged lines (count != OCR lines), positional pairing
         is unsafe → no product lines are built (rather than mismatching products)."""
