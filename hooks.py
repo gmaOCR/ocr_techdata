@@ -2,6 +2,8 @@ import logging
 
 import requests
 
+from odoo.tools import config
+
 from .services._constants import MARS_BASE_URL
 
 _logger = logging.getLogger(__name__)
@@ -10,6 +12,14 @@ _REGISTER_TIMEOUT = 10
 
 
 def post_init_hook(env):
+    # Les builds de test odoo.sh recréent une DB vierge à chaque push et lancent
+    # l'install avec --test-enable. On ne tente PAS l'enregistrement dans ce cas :
+    # le serveur finirait par rate-limiter (429) et polluer les logs de build.
+    # L'install réelle en production (sans test_enable) enregistre normalement.
+    if config.get("test_enable"):
+        _logger.info("ocr_techdata: post_init_hook — test build detected, skipping auto-registration")
+        return
+
     icp = env["ir.config_parameter"].sudo()
 
     # Idempotence : si les credentials existent déjà, ne rien faire

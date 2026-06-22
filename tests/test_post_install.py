@@ -10,6 +10,15 @@ _HOOKS_LOGGER = "odoo.addons.ocr_techdata.hooks"
 class TestPostInstallHook(TransactionCase):
     """Tests for hooks.post_init_hook — requires no real network."""
 
+    def setUp(self):
+        super().setUp()
+        # Odoo runs these tests with config['test_enable']=True, which the hook now
+        # uses to skip auto-registration. Force it off so the registration branches
+        # below are actually exercised. The dedicated skip test overrides this.
+        patcher = patch("odoo.addons.ocr_techdata.hooks.config", {"test_enable": False})
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
     def _make_env(self, database_uuid="test-db-uuid-1234", client_id_existing=""):
         icp = MagicMock()
         params = {
@@ -108,6 +117,20 @@ class TestPostInstallHook(TransactionCase):
             except Exception as exc:
                 self.fail(f"post_init_hook raised unexpectedly: {exc}")
 
+        icp.set_param.assert_not_called()
+
+    def test_hook_skips_during_test_builds(self):
+        """odoo.sh dev/CI builds run with test_enable → no registration attempt at all,
+        so the rate-limited /auth/register endpoint never pollutes the build log."""
+        from odoo.addons.ocr_techdata.hooks import post_init_hook
+
+        env, icp = self._make_env()
+
+        with patch("odoo.addons.ocr_techdata.hooks.config", {"test_enable": True}), \
+                patch("requests.post") as mock_post:
+            post_init_hook(env)
+
+        mock_post.assert_not_called()
         icp.set_param.assert_not_called()
 
     @mute_logger(_HOOKS_LOGGER)
