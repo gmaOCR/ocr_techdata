@@ -122,3 +122,61 @@ class TestFieldMapper(TransactionCase):
         result = mars_to_odoo(expense_resp, "expense")
         self.assertEqual(result["supplier"]["selected_value"]["content"], "Shell")
         self.assertAlmostEqual(result["total"]["selected_value"]["content"], 80.00)
+
+    # ── Régression #8 : signe des avoirs (montants positifs côté Odoo refund) ──
+    def test_credit_note_amounts_are_positive(self):
+        resp = {
+            "status": "success",
+            "fields": {
+                "document_type": "credit_note",
+                "amount_total": -3025.0,
+                "amount_untaxed": -2500.0,
+                "amount_tax": -525.0,
+                "line_items": [{
+                    "description": "Annulation",
+                    "quantity": -1.0,
+                    "unit_price": 2500.0,
+                    "total": -3025.0,
+                    "tax_rate": 21.0,
+                }],
+            },
+            "confidence_scores": {},
+        }
+        result = mars_to_odoo(resp, "invoice")
+        self.assertEqual(result["type"], "refund")
+        self.assertAlmostEqual(result["total"]["selected_value"]["content"], 3025.0)
+        self.assertAlmostEqual(result["subtotal"]["selected_value"]["content"], 2500.0)
+        self.assertAlmostEqual(result["total_tax_amount"]["selected_value"]["content"], 525.0)
+        self.assertAlmostEqual(result["invoice_lines"][0]["quantity"], 1.0)
+        self.assertAlmostEqual(result["invoice_lines"][0]["total"], 3025.0)
+
+    def test_regular_invoice_amounts_unchanged(self):
+        """Non-credit-note amounts must NOT be abs-ed (negative stays negative if ever)."""
+        resp = {"status": "success", "fields": {"document_type": "invoice", "amount_total": 1200.0}}
+        result = mars_to_odoo(resp, "invoice")
+        self.assertNotIn("type", result)
+        self.assertAlmostEqual(result["total"]["selected_value"]["content"], 1200.0)
+
+    # ── Régression #6 : email/phone/website lus par Odoo via .candidates ──────
+    def test_contact_fields_use_candidates_format(self):
+        resp = {
+            "status": "success",
+            "fields": {
+                "vendor_name": "Acme",
+                "email": "billing@acme.test",
+                "phone": "+33123456789",
+                "website": "https://acme.test",
+            },
+            "confidence_scores": {},
+        }
+        result = mars_to_odoo(resp, "invoice")
+        self.assertEqual(result["email"], {"candidates": [{"content": "billing@acme.test"}]})
+        self.assertEqual(result["phone"], {"candidates": [{"content": "+33123456789"}]})
+        self.assertEqual(result["website"], {"candidates": [{"content": "https://acme.test"}]})
+
+    def test_vat_number_has_both_formats(self):
+        """VAT_Number must carry selected_value (partner matching) AND candidates (vat prefill)."""
+        resp = {"status": "success", "fields": {"vendor_vat": "FR12345678901"}}
+        result = mars_to_odoo(resp, "invoice")
+        self.assertEqual(result["VAT_Number"]["selected_value"]["content"], "FR12345678901")
+        self.assertEqual(result["VAT_Number"]["candidates"], [{"content": "FR12345678901"}])

@@ -29,6 +29,18 @@ def _wrap(value) -> dict:
     return {"selected_value": {"content": value}}
 
 
+def _candidates(value) -> dict:
+    """Format read by Odoo 19 for prefill-only features (email/phone/website/vat):
+    ocr_results.get(feature, {}).get('candidates', []) → [{'content': ...}]."""
+    return {"candidates": [{"content": value}]}
+
+
+def _wrap_both(value) -> dict:
+    """Both formats — for VAT_Number, read via selected_value (partner matching) AND
+    via candidates (new-partner vat prefill)."""
+    return {"selected_value": {"content": value}, "candidates": [{"content": value}]}
+
+
 def mars_to_odoo(mars_response: dict, document_type: str) -> Optional[dict]:
     """
     Map a mars /ocr/extract response to the Odoo IAP OCR result format.
@@ -54,7 +66,7 @@ def mars_to_odoo(mars_response: dict, document_type: str) -> Optional[dict]:
 
     vendor_vat = fields.get("vendor_vat")
     if vendor_vat:
-        result["VAT_Number"] = _wrap(vendor_vat)
+        result["VAT_Number"] = _wrap_both(vendor_vat)
 
     inv_num = fields.get("invoice_number")
     if inv_num:
@@ -71,17 +83,23 @@ def mars_to_odoo(mars_response: dict, document_type: str) -> Optional[dict]:
         # Credit notes have no payment due date — use issue date to avoid Odoo defaulting to today
         result["due_date"] = _wrap(date)
 
+    # Credit notes: Odoo carries the sign via move type `in_refund` (amounts stored
+    # positive). Sending a negative total would double-negate the rounding check.
+    def _amt(v: float) -> float:
+        v = float(v)
+        return abs(v) if doc_type == "credit_note" else v
+
     amount_total = fields.get("amount_total")
     if amount_total is not None:
-        result["total"] = _wrap(float(amount_total))
+        result["total"] = _wrap(_amt(amount_total))
 
     amount_untaxed = fields.get("amount_untaxed")
     if amount_untaxed is not None:
-        result["subtotal"] = _wrap(float(amount_untaxed))
+        result["subtotal"] = _wrap(_amt(amount_untaxed))
 
     amount_tax = fields.get("amount_tax")
     if amount_tax is not None:
-        result["total_tax_amount"] = _wrap(float(amount_tax))
+        result["total_tax_amount"] = _wrap(_amt(amount_tax))
 
     currency = fields.get("currency")
     if currency:
@@ -106,17 +124,18 @@ def mars_to_odoo(mars_response: dict, document_type: str) -> Optional[dict]:
 
     # ── Contact / partner prefill fields ─────────────────────────────────────
 
+    # email/phone/website: Odoo 19 reads these via .candidates (NOT .selected_value)
     email = fields.get("email")
     if email:
-        result["email"] = _wrap(email)
+        result["email"] = _candidates(email)
 
     phone = fields.get("phone")
     if phone:
-        result["phone"] = _wrap(phone)
+        result["phone"] = _candidates(phone)
 
     website = fields.get("website")
     if website:
-        result["website"] = _wrap(website)
+        result["website"] = _candidates(website)
 
     # ── Document type (refund detection) ─────────────────────────────────────
     # Odoo reads ocr_results.get('type') directly (NOT via _get_ocr_selected_value)
@@ -136,20 +155,20 @@ def mars_to_odoo(mars_response: dict, document_type: str) -> Optional[dict]:
     if line_items:
         lines = []
         for item in line_items:
-            pu = item.get("unit_price") or 0.0
+            pu = _amt(item.get("unit_price") or 0.0)
             tax_rate = item.get("tax_rate")
-            total = item.get("total") or 0.0
+            total = _amt(item.get("total") or 0.0)
             raw_qty = item.get("quantity")
             # Deduce qty from total/unit_price when Ollama couldn't extract it (OCR layout issue)
-            if raw_qty is None and float(pu) > 0 and float(total) > 0:
-                raw_qty = round(float(total) / float(pu), 4)
-            qty = raw_qty if raw_qty is not None else 1.0
+            if raw_qty is None and pu > 0 and total > 0:
+                raw_qty = round(total / pu, 4)
+            qty = _amt(raw_qty) if raw_qty is not None else 1.0
             line: dict = {
                 "description": item.get("description") or "/",
-                "quantity": float(qty),
-                "unit_price": float(pu),
-                "subtotal": float(qty) * float(pu),
-                "total": float(total),
+                "quantity": qty,
+                "unit_price": pu,
+                "subtotal": qty * pu,
+                "total": total,
                 "taxes": [float(tax_rate)] if tax_rate is not None else [],
                 "product_ref": item.get("product_ref") or None,  # passed through for product_matcher, ignored by Odoo
             }

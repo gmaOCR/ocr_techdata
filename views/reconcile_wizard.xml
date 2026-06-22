@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="ocr_reconcile_wizard_form" model="ir.ui.view">
+        <field name="name">ocr_techdata.reconcile.wizard.form</field>
+        <field name="model">ocr_techdata.reconcile.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Rapprochement OCR">
+                <field name="has_partner_line" invisible="1"/>
+                <field name="has_product_lines" invisible="1"/>
+                <sheet>
+                    <group string="Fournisseur" invisible="not has_partner_line">
+                        <field name="partner_line_ids" nolabel="1">
+                            <list editable="bottom" create="false" delete="false">
+                                <field name="ocr_vendor_name" readonly="1"/>
+                                <field name="ocr_vendor_vat" readonly="1"/>
+                                <field name="ocr_email" readonly="1" optional="hide"/>
+                                <field name="ocr_iban" readonly="1" optional="hide"/>
+                                <field name="candidate_partner_ids" widget="many2many_tags"
+                                       readonly="1" optional="show"/>
+                                <field name="action"/>
+                                <field name="partner_id"
+                                       invisible="action != 'match'"
+                                       required="action == 'match'"/>
+                            </list>
+                        </field>
+                    </group>
+                    <group string="Produits" invisible="not has_product_lines">
+                        <field name="product_line_ids" nolabel="1">
+                            <list editable="bottom" create="false" delete="false">
+                                <field name="move_line_id" column_invisible="1"/>
+                                <field name="ocr_description" readonly="1"/>
+                                <field name="ocr_product_ref" readonly="1"/>
+                                <field name="ocr_unit_price" readonly="1"/>
+                                <field name="candidate_product_ids" widget="many2many_tags"
+                                       readonly="1" optional="show"/>
+                                <field name="action"/>
+                                <field name="product_id"
+                                       invisible="action != 'match'"
+                                       required="action == 'match'"/>
+                            </list>
+                        </field>
+                    </group>
+                </sheet>
+                <footer>
+                    <button string="Appliquer" type="object" name="action_apply" class="btn-primary"/>
+                    <button string="Annuler" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Bouton sur la facture : visible quand des entités OCR restent à rapprocher -->
+    <record id="account_move_form_ocr_reconcile" model="ir.ui.view">
+        <field name="name">account.move.form.ocr.reconcile</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <field name="ocr_has_unmatched" invisible="1"/>
+                <button name="action_open_ocr_reconcile" type="object"
+                        string="Rapprochement OCR" class="btn-warning"
+                        invisible="not ocr_has_unmatched"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

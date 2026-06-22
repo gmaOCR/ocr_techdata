@@ -1,6 +1,6 @@
 import logging
 
-from odoo import Command, fields, models
+from odoo import Command, _, fields, models
 
 from ..services import field_mapper, mars_client, product_matcher
 
@@ -9,6 +9,26 @@ _logger = logging.getLogger(__name__)
 
 class AccountMove(models.Model):
     _inherit = "account.move"
+
+    # Snapshot des champs OCR utiles au wizard de rapprochement (product_ref, VAT, IBAN,
+    # BIC… ne sont pas persistés par Odoo). Clé 'fields' + liste 'lines' (par ligne mars).
+    ocr_extraction_data = fields.Json(string="OCR — données d'extraction", copy=False)
+    ocr_has_unmatched = fields.Boolean(
+        string="OCR — entités à rapprocher", compute="_compute_ocr_has_unmatched"
+    )
+
+    def _compute_ocr_has_unmatched(self):
+        icp = self.env["ir.config_parameter"].sudo()
+        is_paddle = icp.get_param("ocr_techdata.provider", "odoo_iap") == "paddlevl"
+        for move in self:
+            unmatched = False
+            if is_paddle and move.extract_state in ("waiting_validation", "to_validate"):
+                no_product = any(
+                    not line.product_id
+                    for line in move.invoice_line_ids.filtered("is_imported")
+                )
+                unmatched = (not move.partner_id) or no_product
+            move.ocr_has_unmatched = unmatched
 
     def action_reload_ai_data(self):
         """Override: Reload AI Data button — reset fields then re-run our synchronous OCR."""
@@ -93,6 +113,24 @@ class AccountMove(models.Model):
             il.get("product_ref") for il in ocr_results.get("invoice_lines", [])
         ]
 
+        # Snapshot OCR pour le wizard de rapprochement (champs non persistés par Odoo)
+        ocr_fields_snapshot = mars_response.get("fields") or {}
+        self.ocr_extraction_data = {
+            "fields": {
+                k: ocr_fields_snapshot.get(k)
+                for k in ("vendor_name", "vendor_vat", "email", "phone", "iban", "bic")
+                if ocr_fields_snapshot.get(k)
+            },
+            "lines": [
+                {
+                    "description": il.get("description"),
+                    "product_ref": il.get("product_ref"),
+                    "unit_price": il.get("unit_price"),
+                }
+                for il in ocr_results.get("invoice_lines", [])
+            ],
+        }
+
         self.extract_state = "waiting_validation"
         self.extract_status = "success"
         self.with_company(self.company_id)._fill_document_with_results(ocr_results)
@@ -163,10 +201,25 @@ class AccountMove(models.Model):
 
         return None
 
+    @staticmethod
+    def _ocr_zip_guard(imported_lines, ocr_seq, context=""):
+        """Positional pairing is only safe when counts match. When Odoo merged invoice
+        lines (e.g. company option `extract_single_line_per_tax`), the count diverges
+        from the OCR line count and positional zip would mismatch product↔line. In that
+        case return [] (skip) and log, rather than assign the wrong products."""
+        if len(imported_lines) != len(ocr_seq):
+            _logger.warning(
+                "ocr_techdata: line count mismatch (%d Odoo vs %d OCR)%s — skipping "
+                "positional product matching to avoid wrong assignments",
+                len(imported_lines), len(ocr_seq), f" [{context}]" if context else "",
+            )
+            return []
+        return list(zip(imported_lines, ocr_seq))
+
     def _apply_product_matching(self, line_product_refs: list):
         """Try to assign product_id to OCR-imported lines using product_matcher."""
         imported_lines = self.invoice_line_ids.filtered("is_imported")
-        for line, product_ref in zip(imported_lines, line_product_refs):
+        for line, product_ref in self._ocr_zip_guard(imported_lines, line_product_refs, "matching"):
             if line.product_id:
                 continue  # already assigned (account_predictive_bills or other)
             product = product_matcher.find_product(
@@ -192,36 +245,124 @@ class AccountMove(models.Model):
         return result
 
     def _learn_product_mappings(self):
-        """Memorise (partner, description) → product_id for validated OCR invoice lines."""
-        Mapping = self.env["ocr_techdata.product_mapping"]
+        """On validation, memorise (partner, OCR-description) → product_id.
+
+        Uses the ORIGINAL OCR description from the extraction snapshot — NOT line.name,
+        which Odoo rewrites when a product is set, so the learned key would otherwise
+        diverge from the OCR description seen on the next scan (level-4 miss)."""
         for move in self:
-            if not move.partner_id:
+            if not move.partner_id or move.extract_state not in ("waiting_validation", "done"):
                 continue
-            if move.extract_state not in ("waiting_validation", "done"):
+            ocr_lines = (move.ocr_extraction_data or {}).get("lines", [])
+            imported = move.invoice_line_ids.filtered("is_imported")
+            desc_by_line_id = {
+                line.id: (ol.get("description") or line.name)
+                for line, ol in self._ocr_zip_guard(imported, ocr_lines, "learning")
+            }
+            move._learn_product_mappings_from_ocr(desc_by_line_id)
+
+    def _learn_product_mappings_from_ocr(self, desc_by_line_id: dict):
+        """Record mappings for imported lines that have a product, keyed by the OCR
+        description provided in `desc_by_line_id` (falls back to line.name if absent)."""
+        self.ensure_one()
+        if not self.partner_id:
+            return
+        Mapping = self.env["ocr_techdata.product_mapping"]
+        for line in self.invoice_line_ids.filtered(lambda l: l.is_imported and l.product_id):
+            ocr_desc = desc_by_line_id.get(line.id) or line.name
+            key = product_matcher._normalize_description(ocr_desc)
+            if not key:
                 continue
-            for line in move.invoice_line_ids.filtered(lambda l: l.is_imported and l.product_id):
-                key = product_matcher._normalize_description(line.name)
-                if not key:
-                    continue
-                existing = Mapping.search([
-                    ("partner_id", "=", move.partner_id.id),
-                    ("description_key", "=", key),
-                    ("company_id", "=", move.company_id.id),
-                ], limit=1)
-                if existing:
-                    existing.write({
-                        "product_id": line.product_id.id,
-                        "match_count": existing.match_count + 1,
-                        "last_validated": fields.Datetime.now(),
-                    })
-                else:
-                    Mapping.create({
-                        "partner_id": move.partner_id.id,
-                        "description_key": key,
-                        "product_id": line.product_id.id,
-                        "company_id": move.company_id.id,
-                        "last_validated": fields.Datetime.now(),
-                    })
+            existing = Mapping.search([
+                ("partner_id", "=", self.partner_id.id),
+                ("description_key", "=", key),
+                ("company_id", "=", self.company_id.id),
+            ], limit=1)
+            if existing:
+                existing.write({
+                    "product_id": line.product_id.id,
+                    "match_count": existing.match_count + 1,
+                    "last_validated": fields.Datetime.now(),
+                })
+            else:
+                Mapping.create({
+                    "partner_id": self.partner_id.id,
+                    "description_key": key,
+                    "product_id": line.product_id.id,
+                    "company_id": self.company_id.id,
+                    "last_validated": fields.Datetime.now(),
+                })
+
+    def _ocr_partner_candidates(self, ocr_fields: dict, limit: int = 5):
+        """Return up to `limit` res.partner candidates for the reconcile wizard."""
+        Partner = self.env["res.partner"]
+        ids: list[int] = []
+        vat = (ocr_fields.get("vendor_vat") or "").strip()
+        if vat:
+            ids += Partner.search([("vat", "=", vat), ("active", "=", True)], limit=limit).ids
+        name = (ocr_fields.get("vendor_name") or "").strip()
+        if name:
+            for p in Partner.search(
+                [("name", "ilike", name), ("is_company", "=", True), ("active", "=", True)],
+                limit=limit,
+            ):
+                if p.id not in ids:
+                    ids.append(p.id)
+        return Partner.browse(ids[:limit])
+
+    def action_open_ocr_reconcile(self):
+        """Open the reconcile wizard for the move's unmatched supplier / product lines."""
+        self.ensure_one()
+        data = self.ocr_extraction_data or {}
+        ocr_fields = data.get("fields", {})
+        ocr_lines = data.get("lines", [])
+
+        partner_line_vals = []
+        if not self.partner_id:
+            candidates = self._ocr_partner_candidates(ocr_fields)
+            partner_line_vals.append((0, 0, {
+                "ocr_vendor_name": ocr_fields.get("vendor_name"),
+                "ocr_vendor_vat": ocr_fields.get("vendor_vat"),
+                "ocr_email": ocr_fields.get("email"),
+                "ocr_phone": ocr_fields.get("phone"),
+                "ocr_iban": ocr_fields.get("iban"),
+                "ocr_bic": ocr_fields.get("bic"),
+                "candidate_partner_ids": [Command.set(candidates.ids)],
+                "action": "match" if candidates else "create",
+                "partner_id": candidates[:1].id if candidates else False,
+            }))
+
+        product_line_vals = []
+        imported = self.invoice_line_ids.filtered("is_imported")
+        for line, ocr_line in self._ocr_zip_guard(imported, ocr_lines, "wizard"):
+            if line.product_id:
+                continue
+            ref = ocr_line.get("product_ref") or None
+            desc = ocr_line.get("description") or line.name
+            cands = product_matcher.find_candidates(self.env, self.partner_id.id, desc, ref)
+            product_line_vals.append((0, 0, {
+                "move_line_id": line.id,
+                "ocr_description": desc,
+                "ocr_product_ref": ref,
+                "ocr_unit_price": ocr_line.get("unit_price") or 0.0,
+                "candidate_product_ids": [Command.set(cands.ids)],
+                "action": "match" if cands else "create",
+                "product_id": cands[:1].id if cands else False,
+            }))
+
+        wizard = self.env["ocr_techdata.reconcile.wizard"].create({
+            "move_id": self.id,
+            "partner_line_ids": partner_line_vals,
+            "product_line_ids": product_line_vals,
+        })
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Rapprochement OCR"),
+            "res_model": "ocr_techdata.reconcile.wizard",
+            "res_id": wizard.id,
+            "view_mode": "form",
+            "target": "new",
+        }
 
     def _get_ocr_document_type(self) -> str:
         if self.is_purchase_document(include_receipts=True):

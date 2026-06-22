@@ -16,6 +16,7 @@
         "views/purchase_wizard.xml",
         "views/res_config_settings_views.xml",
         "views/product_mapping_views.xml",
+        "views/reconcile_wizard.xml",
     ],
     "installable": True,
     "auto_install": False,

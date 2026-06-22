@@ -66,6 +66,14 @@ def _refresh_access_token(env, refresh_token: str) -> Optional[str]:
 
     _ACCESS_TOKEN = data.get("access_token")
     _ACCESS_EXPIRES_AT = time.time() + data.get("expires_in", 900)
+
+    # mars rotates the refresh token on every /auth/refresh (the old jti is invalidated
+    # server-side). We MUST persist the rotated token, otherwise the next refresh reuses
+    # an already-invalidated token -> 401 -> forced full re-auth on every cycle.
+    new_refresh = data.get("refresh_token")
+    if new_refresh:
+        icp.set_param("ocr_techdata.refresh_token", new_refresh)
+
     return _ACCESS_TOKEN
 
 

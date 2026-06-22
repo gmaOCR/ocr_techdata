@@ -248,6 +248,65 @@ class TestFindProductLevel6(unittest.TestCase):
         self.assertIsNone(result)
 
 
+class TestEnoughWords(unittest.TestCase):
+    """Level-6 guard: require >= 2 real words (>=2 chars) to avoid laxist ilike."""
+
+    def test_two_real_words_ok(self):
+        self.assertTrue(pm._enough_words("Papier A4"))
+
+    def test_single_word_rejected(self):
+        self.assertFalse(pm._enough_words("Photocopieur"))
+
+    def test_short_tokens_rejected(self):
+        self.assertFalse(pm._enough_words("a b"))  # both single-char
+
+    def test_empty(self):
+        self.assertFalse(pm._enough_words(""))
+
+
+class TestCrossPartnerRefGuard(unittest.TestCase):
+    """Levels 2/3 (cross-partner) must be skipped for short refs (<3) — collision guard.
+    Level 1 (partner-scoped) stays permissive."""
+
+    def _env_two_si_calls(self):
+        si = _si(_product())
+        si_model = MagicMock()
+        # level 1 (partner) misses; level 2 (any) would hit IF reached
+        si_model.search.side_effect = [MagicMock(__bool__=lambda s: False), si]
+        prod_model = MagicMock()
+        prod_model.search.return_value = MagicMock(__bool__=lambda s: False)
+        map_model = MagicMock()
+        map_model.search.return_value = MagicMock(__bool__=lambda s: False)
+        registry = {
+            "product.supplierinfo": si_model,
+            "product.product": prod_model,
+            "ocr_techdata.product_mapping": map_model,
+        }
+        env = MagicMock()
+        env.company.id = 1
+        env.__getitem__ = MagicMock(side_effect=lambda k: registry.get(k, MagicMock()))
+        return env, si_model, si
+
+    def test_short_ref_skips_levels_2_3(self):
+        env, si_model, _ = self._env_two_si_calls()
+        result = pm.find_product(env, partner_id=1, description="", product_ref="A1")
+        self.assertIsNone(result)
+        self.assertEqual(si_model.search.call_count, 1)  # only level-1 ran
+
+    def test_long_ref_allows_level_2(self):
+        env, si_model, si = self._env_two_si_calls()
+        result = pm.find_product(env, partner_id=1, description="", product_ref="ABC")
+        self.assertEqual(result, si.product_id)
+        self.assertEqual(si_model.search.call_count, 2)  # level-1 miss + level-2 hit
+
+    def test_ref_is_stripped(self):
+        """Trailing OCR whitespace must not prevent a level-1 match."""
+        env, si_model, _ = self._env_two_si_calls()
+        pm.find_product(env, partner_id=1, description="", product_ref="  AB  ")
+        # "  AB  " → stripped "AB" (len 2) → cross-partner guarded → only level-1 search
+        self.assertEqual(si_model.search.call_count, 1)
+
+
 class TestFindProductNoMatch(unittest.TestCase):
     def test_returns_none_when_nothing_matches(self):
         env = _env()

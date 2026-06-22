@@ -71,6 +71,57 @@ class TestJwtAuth(TransactionCase):
 
         self.assertEqual(result, "new.access.token")
 
+    def test_refresh_persists_rotated_token(self):
+        """mars rotates the refresh token on /auth/refresh — the rotated token in the
+        response must be persisted to ICP, otherwise the next refresh 401s."""
+        env, icp = self._make_env_mock(refresh_token="old.refresh.token")
+        import time
+        jwt_auth._ACCESS_TOKEN = "old.token"
+        jwt_auth._ACCESS_EXPIRES_AT = time.time() + 30  # within refresh-ahead window
+
+        refresh_response = {
+            "access_token": "new.access.token",
+            "refresh_token": "rotated.refresh.token",
+            "expires_in": 900,
+        }
+        with patch("odoo.addons.ocr_techdata.services.jwt_auth.requests.post") as mock_post:
+            mock_post.return_value = MagicMock(
+                status_code=200,
+                json=lambda: refresh_response,
+                raise_for_status=lambda: None,
+            )
+            result = jwt_auth.get_access_token(env)
+
+        self.assertEqual(result, "new.access.token")
+        icp.set_param.assert_called_with("ocr_techdata.refresh_token", "rotated.refresh.token")
+
+    @mute_logger(_JWT_LOGGER)
+    def test_refresh_401_clears_stale_token(self):
+        """A 401 on refresh must clear the stale token from ICP and fall back to re-auth."""
+        env, icp = self._make_env_mock(refresh_token="stale.refresh.token")
+        import time
+        jwt_auth._ACCESS_TOKEN = "old.token"
+        jwt_auth._ACCESS_EXPIRES_AT = time.time() + 30
+
+        reauth_response = {
+            "access_token": "reauth.access.token",
+            "refresh_token": "fresh.refresh.token",
+            "expires_in": 900,
+        }
+
+        def post_side_effect(url, **kwargs):
+            if url.endswith("/auth/refresh"):
+                return MagicMock(status_code=401, json=lambda: {}, raise_for_status=lambda: None)
+            return MagicMock(status_code=200, json=lambda: reauth_response, raise_for_status=lambda: None)
+
+        with patch("odoo.addons.ocr_techdata.services.jwt_auth.requests.post", side_effect=post_side_effect):
+            result = jwt_auth.get_access_token(env)
+
+        self.assertEqual(result, "reauth.access.token")
+        # stale token cleared, then fresh token from re-auth persisted
+        icp.set_param.assert_any_call("ocr_techdata.refresh_token", "")
+        icp.set_param.assert_any_call("ocr_techdata.refresh_token", "fresh.refresh.token")
+
     @mute_logger(_JWT_LOGGER)
     def test_missing_credentials_returns_none(self):
         env, _ = self._make_env_mock(client_id="", client_secret="")
