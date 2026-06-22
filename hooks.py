@@ -40,6 +40,14 @@ def post_init_hook(env):
     except requests.exceptions.Timeout:
         _logger.warning("ocr_techdata: post_init_hook — registration request timed out, skipping")
         return
+    except requests.exceptions.HTTPError as exc:
+        status = exc.response.status_code if exc.response is not None else "?"
+        _logger.warning(
+            "ocr_techdata: post_init_hook — registration rejected by server (HTTP %s), skipping. "
+            "Run action_register_instance from settings when the server is available.",
+            status,
+        )
+        return
     except Exception:
         _logger.exception("ocr_techdata: post_init_hook — unexpected error during registration")
         return

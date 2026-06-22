@@ -90,6 +90,27 @@ class TestPostInstallHook(TransactionCase):
                 self.fail(f"post_init_hook raised unexpectedly: {exc}")
 
     @mute_logger(_HOOKS_LOGGER)
+    def test_hook_does_not_block_on_http_error(self):
+        """A 429/5xx from the register endpoint must be a WARNING + skip, never an
+        ERROR traceback (odoo.sh CI fails the build on ERROR log lines)."""
+        from odoo.addons.ocr_techdata.hooks import post_init_hook
+        import requests
+
+        env, icp = self._make_env()
+        mock_response = MagicMock(status_code=429)
+        mock_response.raise_for_status = MagicMock(
+            side_effect=requests.exceptions.HTTPError("429", response=mock_response)
+        )
+
+        with patch("requests.post", return_value=mock_response):
+            try:
+                post_init_hook(env)
+            except Exception as exc:
+                self.fail(f"post_init_hook raised unexpectedly: {exc}")
+
+        icp.set_param.assert_not_called()
+
+    @mute_logger(_HOOKS_LOGGER)
     def test_hook_skips_when_database_uuid_missing(self):
         from odoo.addons.ocr_techdata.hooks import post_init_hook
 
