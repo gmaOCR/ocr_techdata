@@ -357,7 +357,7 @@ class AccountMove(models.Model):
         })
         return {
             "type": "ir.actions.act_window",
-            "name": _("Rapprochement OCR"),
+            "name": _("OCR Reconciliation"),
             "res_model": "ocr_techdata.reconcile.wizard",
             "res_id": wizard.id,
             "view_mode": "form",
